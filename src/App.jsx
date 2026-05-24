@@ -29,149 +29,455 @@ import acc4 from "./assets/accesorio4.jpg";
 function App() {
   const [categoriaActiva, setCategoriaActiva] = useState(null);
   const [carrito, setCarrito] = useState([]);
+  const [favoritos, setFavoritos] = useState([]);
+  const [busqueda, setBusqueda] = useState("");
+  const [orden, setOrden] = useState("");
+  const [productoDetalle, setProductoDetalle] = useState(null);
+  const [cupon, setCupon] = useState("");
+  const [descuento, setDescuento] = useState(0);
+  const [metodoPago, setMetodoPago] = useState("");
+  const [mensaje, setMensaje] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const data = localStorage.getItem("carrito");
-    if (data) setCarrito(JSON.parse(data));
+    const dataCarrito = localStorage.getItem("carrito");
+    const dataFavoritos = localStorage.getItem("favoritos");
+
+    if (dataCarrito) setCarrito(JSON.parse(dataCarrito));
+    if (dataFavoritos) setFavoritos(JSON.parse(dataFavoritos));
+
+    setTimeout(() => {
+      setLoading(false);
+    }, 1200);
   }, []);
 
   useEffect(() => {
     localStorage.setItem("carrito", JSON.stringify(carrito));
   }, [carrito]);
 
+  useEffect(() => {
+    localStorage.setItem("favoritos", JSON.stringify(favoritos));
+  }, [favoritos]);
+
+  const productos = {
+    camisetas: [
+      { img: camisa1, nombre: "Camiseta Oversize Black", precio: "$120.000", stock: 5 },
+      { img: camisa2, nombre: "Camiseta Urban White", precio: "$130.000", stock: 4 },
+      { img: camisa3, nombre: "Camiseta Street Classic", precio: "$110.000", stock: 6 },
+      { img: camisa4, nombre: "Camiseta Premium Edition", precio: "$150.000", stock: 3 },
+    ],
+    pantalones: [
+      { img: pantalon1, nombre: "Pantalón Cargo Negro", precio: "$180.000", stock: 4 },
+      { img: pantalon2, nombre: "Jogger Streetwear", precio: "$200.000", stock: 3 },
+      { img: pantalon3, nombre: "Pantalón Urban Fit", precio: "$170.000", stock: 6 },
+      { img: pantalon4, nombre: "Cargo Premium", precio: "$190.000", stock: 2 },
+    ],
+    hoodies: [
+      { img: buzo1, nombre: "Hoodie Black Premium", precio: "$200.000", stock: 5 },
+      { img: buzo2, nombre: "Hoodie Oversize", precio: "$220.000", stock: 4 },
+      { img: buzo3, nombre: "Hoodie Urban Gray", precio: "$210.000", stock: 3 },
+      { img: buzo4, nombre: "Hoodie Limited", precio: "$230.000", stock: 2 },
+    ],
+    accesorios: [
+      { img: acc1, nombre: "Gorra Blackwear", precio: "$50.000", stock: 8 },
+      { img: acc2, nombre: "Cadena Silver", precio: "$60.000", stock: 7 },
+      { img: acc3, nombre: "Bolso Urban", precio: "$55.000", stock: 5 },
+      { img: acc4, nombre: "Gafas Street", precio: "$70.000", stock: 4 },
+    ],
+  };
+
+  const mostrarMensaje = (texto) => {
+    setMensaje(texto);
+    setTimeout(() => setMensaje(""), 2200);
+  };
+
+  const convertirPrecio = (precio) => {
+    return parseInt(precio.replace("$", "").replace(/\./g, ""));
+  };
+
   const agregarAlCarrito = (producto) => {
     const existe = carrito.find((item) => item.nombre === producto.nombre);
+    const cantidadActual = existe ? existe.cantidad : 0;
+
+    if (cantidadActual >= producto.stock) {
+      mostrarMensaje("Producto agotado");
+      return;
+    }
 
     if (existe) {
-      const nuevo = carrito.map((item) =>
-        item.nombre === producto.nombre
-          ? { ...item, cantidad: item.cantidad + 1 }
-          : item
+      setCarrito(
+        carrito.map((item) =>
+          item.nombre === producto.nombre
+            ? { ...item, cantidad: item.cantidad + 1 }
+            : item
+        )
       );
-      setCarrito(nuevo);
     } else {
       setCarrito([...carrito, { ...producto, cantidad: 1 }]);
     }
+
+    mostrarMensaje("Producto agregado al carrito");
+  };
+
+  const toggleFavorito = (producto) => {
+    const existe = favoritos.find((item) => item.nombre === producto.nombre);
+
+    if (existe) {
+      setFavoritos(favoritos.filter((item) => item.nombre !== producto.nombre));
+      mostrarMensaje("Producto eliminado de favoritos");
+    } else {
+      setFavoritos([...favoritos, producto]);
+      mostrarMensaje("Producto agregado a favoritos");
+    }
+  };
+
+  const aumentarCantidad = (nombre) => {
+    setCarrito(
+      carrito.map((item) =>
+        item.nombre === nombre && item.cantidad < item.stock
+          ? { ...item, cantidad: item.cantidad + 1 }
+          : item
+      )
+    );
+  };
+
+  const disminuirCantidad = (nombre) => {
+    setCarrito(
+      carrito.map((item) =>
+        item.nombre === nombre && item.cantidad > 1
+          ? { ...item, cantidad: item.cantidad - 1 }
+          : item
+      )
+    );
   };
 
   const eliminarProducto = (nombre) => {
     setCarrito(carrito.filter((item) => item.nombre !== nombre));
+    mostrarMensaje("Producto eliminado");
   };
 
   const vaciarCarrito = () => {
     setCarrito([]);
+    mostrarMensaje("Carrito vacío");
   };
 
-  const total = carrito.reduce((acc, item) => {
-    const numero = item.precio.replace("$", "").replace(/\./g, "");
-    return acc + parseInt(numero) * item.cantidad;
-  }, 0);
-
-  const productos = {
-    camisetas: [
-      { img: camisa1, nombre: "Camiseta 1", precio: "$120.000" },
-      { img: camisa2, nombre: "Camiseta 2", precio: "$130.000" },
-      { img: camisa3, nombre: "Camiseta 3", precio: "$110.000" },
-      { img: camisa4, nombre: "Camiseta 4", precio: "$150.000" },
-    ],
-    pantalones: [
-      { img: pantalon1, nombre: "Pantalón 1", precio: "$180.000" },
-      { img: pantalon2, nombre: "Pantalón 2", precio: "$200.000" },
-      { img: pantalon3, nombre: "Pantalón 3", precio: "$170.000" },
-      { img: pantalon4, nombre: "Pantalón 4", precio: "$190.000" },
-    ],
-    hoodies: [
-      { img: buzo1, nombre: "Hoodie 1", precio: "$200.000" },
-      { img: buzo2, nombre: "Hoodie 2", precio: "$220.000" },
-      { img: buzo3, nombre: "Hoodie 3", precio: "$210.000" },
-      { img: buzo4, nombre: "Hoodie 4", precio: "$230.000" },
-    ],
-    accesorios: [
-      { img: acc1, nombre: "Accesorio 1", precio: "$50.000" },
-      { img: acc2, nombre: "Accesorio 2", precio: "$60.000" },
-      { img: acc3, nombre: "Accesorio 3", precio: "$55.000" },
-      { img: acc4, nombre: "Accesorio 4", precio: "$70.000" },
-    ],
+  const aplicarCupon = () => {
+    if (cupon.toUpperCase() === "BLACK10") {
+      setDescuento(10);
+      mostrarMensaje("Cupón aplicado: 10% de descuento");
+    } else {
+      setDescuento(0);
+      mostrarMensaje("Cupón no válido");
+    }
   };
+
+  const subtotal = carrito.reduce(
+    (acc, item) => acc + convertirPrecio(item.precio) * item.cantidad,
+    0
+  );
+
+  const valorDescuento = subtotal * (descuento / 100);
+  const total = subtotal - valorDescuento;
+
+  const cantidadTotal = carrito.reduce((acc, item) => acc + item.cantidad, 0);
+
+  let productosFiltrados = categoriaActiva
+    ? productos[categoriaActiva].filter((p) =>
+        p.nombre.toLowerCase().includes(busqueda.toLowerCase())
+      )
+    : [];
+
+  if (orden === "menor") {
+    productosFiltrados.sort((a, b) => convertirPrecio(a.precio) - convertirPrecio(b.precio));
+  }
+
+  if (orden === "mayor") {
+    productosFiltrados.sort((a, b) => convertirPrecio(b.precio) - convertirPrecio(a.precio));
+  }
+
+  if (orden === "az") {
+    productosFiltrados.sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }
+
+  const finalizarCompra = () => {
+    if (!metodoPago) {
+      mostrarMensaje("Selecciona un método de pago");
+      return;
+    }
+
+    alert(`Compra simulada exitosa con ${metodoPago}. Gracias por comprar en BLACKWEAR.`);
+    setCarrito([]);
+    setCupon("");
+    setDescuento(0);
+    setMetodoPago("");
+  };
+
+  if (loading) {
+    return (
+      <div className="loading">
+        <h1>BLACKWEAR</h1>
+        <p>Cargando tienda...</p>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div className="navbar">
-        <h2>BLACKWEAR</h2>
-        <div className="cart">🛒 {carrito.length}</div>
-      </div>
+    <div className="app">
+      {mensaje && <div className="toast">{mensaje}</div>}
 
-      {carrito.length > 0 && (
-        <div className="carrito-info">
-          <p>Productos: {carrito.length}</p>
-          <p>Total: ${total.toLocaleString()}</p>
-          <button onClick={vaciarCarrito}>Vaciar carrito</button>
-        </div>
-      )}
+      <header className="navbar">
+        <div className="logo">BLACKWEAR</div>
 
-      {carrito.length > 0 && (
-        <div className="carrito-lista">
-          {carrito.map((item, i) => (
-            <div key={i} className="carrito-item">
-              <img src={item.img} />
-              <div>
-                <p>{item.nombre}</p>
-                <span>{item.precio} x{item.cantidad}</span>
-              </div>
-              <button onClick={() => eliminarProducto(item.nombre)}>X</button>
-            </div>
-          ))}
+        <nav>
+          <button onClick={() => setCategoriaActiva(null)}>Inicio</button>
+          <button onClick={() => setCategoriaActiva("camisetas")}>Tienda</button>
+          <button onClick={() => alert("BLACKWEAR es una marca urbana de moda streetwear premium.")}>
+            Nosotros
+          </button>
+        </nav>
+
+        <div className="nav-icons">
+          <span>❤️ {favoritos.length}</span>
+          <span>🛒 {cantidadTotal}</span>
         </div>
-      )}
+      </header>
 
       {!categoriaActiva && (
         <>
-          <div className="hero"></div>
-
-          <div className="categories">
-            <div className="category" onClick={() => setCategoriaActiva("camisetas")}>
-              <img src={camisa} />
-              <span>Camisetas</span>
+          <section className="hero">
+            <div className="hero-content">
+              <p className="tag">Nueva colección 2026</p>
+              <h1>BLACKWEAR</h1>
+              <h2>Streetwear premium para crear tendencia</h2>
+              <button onClick={() => setCategoriaActiva("camisetas")}>
+                Comprar ahora
+              </button>
             </div>
+          </section>
 
-            <div className="category" onClick={() => setCategoriaActiva("pantalones")}>
-              <img src={pantalon} />
-              <span>Pantalones</span>
-            </div>
+          <section className="section">
+            <h2>Categorías</h2>
+            <p>Explora nuestra colección urbana.</p>
 
-            <div className="category" onClick={() => setCategoriaActiva("hoodies")}>
-              <img src={buzo} />
-              <span>Hoodies</span>
-            </div>
+            <div className="categories">
+              <div className="category" onClick={() => setCategoriaActiva("camisetas")}>
+                <img src={camisa} />
+                <span>Camisetas</span>
+              </div>
 
-            <div className="category" onClick={() => setCategoriaActiva("accesorios")}>
-              <img src={accesorios} />
-              <span>Accesorios</span>
+              <div className="category" onClick={() => setCategoriaActiva("pantalones")}>
+                <img src={pantalon} />
+                <span>Pantalones</span>
+              </div>
+
+              <div className="category" onClick={() => setCategoriaActiva("hoodies")}>
+                <img src={buzo} />
+                <span>Hoodies</span>
+              </div>
+
+              <div className="category" onClick={() => setCategoriaActiva("accesorios")}>
+                <img src={accesorios} />
+                <span>Accesorios</span>
+              </div>
             </div>
-          </div>
+          </section>
         </>
       )}
 
       {categoriaActiva && (
-        <div className="productos">
+        <section className="productos">
           <button onClick={() => setCategoriaActiva(null)} className="volver">
-            ← Volver
+            ← Volver al inicio
           </button>
 
           <h2>{categoriaActiva.toUpperCase()}</h2>
 
+          <div className="controles">
+            <input
+              className="buscador"
+              type="text"
+              placeholder="Buscar producto..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+            />
+
+            <select className="ordenar" value={orden} onChange={(e) => setOrden(e.target.value)}>
+              <option value="">Ordenar por</option>
+              <option value="menor">Precio menor</option>
+              <option value="mayor">Precio mayor</option>
+              <option value="az">Nombre A-Z</option>
+            </select>
+          </div>
+
           <div className="grid">
-            {productos[categoriaActiva].map((p, i) => (
-              <div key={i} className="card">
-                <img src={p.img} />
-                <h3>{p.nombre}</h3>
-                <p>{p.precio}</p>
-                <button onClick={() => agregarAlCarrito(p)}>Agregar</button>
-              </div>
-            ))}
+            {productosFiltrados.map((p, i) => {
+              const esFavorito = favoritos.some((item) => item.nombre === p.nombre);
+
+              return (
+                <div key={i} className="card">
+                  <button className="favorito" onClick={() => toggleFavorito(p)}>
+                    {esFavorito ? "❤️" : "♡"}
+                  </button>
+
+                  <img src={p.img} />
+
+                  <div className="card-body">
+                    <h3>{p.nombre}</h3>
+                    <p>{p.precio}</p>
+                    <span className="stock">Stock: {p.stock} unidades</span>
+
+                    <select>
+                      <option>Talla S</option>
+                      <option>Talla M</option>
+                      <option>Talla L</option>
+                      <option>Talla XL</option>
+                    </select>
+
+                    <button onClick={() => agregarAlCarrito(p)}>
+                      Agregar al carrito
+                    </button>
+
+                    <button className="detalle-btn" onClick={() => setProductoDetalle(p)}>
+                      Ver detalle
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {productoDetalle && (
+        <div className="modal-fondo">
+          <div className="modal">
+            <button className="cerrar" onClick={() => setProductoDetalle(null)}>
+              ✕
+            </button>
+
+            <img src={productoDetalle.img} />
+
+            <div>
+              <h2>{productoDetalle.nombre}</h2>
+              <p className="stars">★★★★★ 4.9</p>
+              <p className="descripcion">
+                Producto premium de estilo urbano, cómodo, moderno y perfecto para outfits streetwear.
+              </p>
+              <h3>{productoDetalle.precio}</h3>
+              <p>Stock disponible: {productoDetalle.stock}</p>
+
+              <button onClick={() => agregarAlCarrito(productoDetalle)}>
+                Agregar al carrito
+              </button>
+            </div>
           </div>
         </div>
       )}
+
+      {carrito.length > 0 && (
+        <aside className="carrito-panel">
+          <h2>Carrito</h2>
+
+          {carrito.map((item, i) => (
+            <div key={i} className="carrito-item">
+              <img src={item.img} />
+
+              <div>
+                <h4>{item.nombre}</h4>
+                <p>{item.precio}</p>
+
+                <div className="cantidad">
+                  <button onClick={() => disminuirCantidad(item.nombre)}>-</button>
+                  <span>{item.cantidad}</span>
+                  <button onClick={() => aumentarCantidad(item.nombre)}>+</button>
+                </div>
+              </div>
+
+              <button className="eliminar" onClick={() => eliminarProducto(item.nombre)}>
+                ✕
+              </button>
+            </div>
+          ))}
+
+          <div className="cupon">
+            <input
+              type="text"
+              placeholder="Código cupón"
+              value={cupon}
+              onChange={(e) => setCupon(e.target.value)}
+            />
+            <button onClick={aplicarCupon}>Aplicar</button>
+          </div>
+
+          <div className="metodos">
+            <p>Método de pago:</p>
+
+            <label>
+              <input
+                type="radio"
+                name="pago"
+                value="Tarjeta"
+                checked={metodoPago === "Tarjeta"}
+                onChange={(e) => setMetodoPago(e.target.value)}
+              />
+              Tarjeta
+            </label>
+
+            <label>
+              <input
+                type="radio"
+                name="pago"
+                value="PSE"
+                checked={metodoPago === "PSE"}
+                onChange={(e) => setMetodoPago(e.target.value)}
+              />
+              PSE
+            </label>
+
+            <label>
+              <input
+                type="radio"
+                name="pago"
+                value="Nequi"
+                checked={metodoPago === "Nequi"}
+                onChange={(e) => setMetodoPago(e.target.value)}
+              />
+              Nequi
+            </label>
+          </div>
+
+          <div className="total">
+            <span>Subtotal:</span>
+            <strong>${subtotal.toLocaleString()}</strong>
+          </div>
+
+          {descuento > 0 && (
+            <div className="total descuento">
+              <span>Descuento:</span>
+              <strong>-${valorDescuento.toLocaleString()}</strong>
+            </div>
+          )}
+
+          <div className="total">
+            <span>Total:</span>
+            <strong>${total.toLocaleString()}</strong>
+          </div>
+
+          <button className="checkout" onClick={finalizarCompra}>
+            Finalizar compra
+          </button>
+
+          <button className="vaciar" onClick={vaciarCarrito}>
+            Vaciar carrito
+          </button>
+        </aside>
+      )}
+
+      <footer>
+        <h3>BLACKWEAR</h3>
+        <p>Moda urbana | Streetwear | Colombia</p>
+        <p>Instagram · TikTok · WhatsApp</p>
+      </footer>
     </div>
   );
 }
